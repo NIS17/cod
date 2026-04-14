@@ -1,7 +1,7 @@
 # =========================================================
 # 🔥 COMPLETE ML LAB - TRUE FINAL (ALL 12 QUESTIONS)
 # =========================================================
-
+"""
 
 # =========================================================
 # Q1: PCA + CLASSIFICATION
@@ -426,3 +426,9 @@ if y_reg.dtype!='object':
 
     plt.scatter(y_test,y_pred); plt.show()
     plt.scatter(y_pred,y_test-y_pred); plt.axhline(0,color='red'); plt.show()
+
+#PCA QSTN 
+
+
+    
+"""
