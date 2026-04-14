@@ -427,8 +427,133 @@ if y_reg.dtype!='object':
     plt.scatter(y_test,y_pred); plt.show()
     plt.scatter(y_pred,y_test-y_pred); plt.axhline(0,color='red'); plt.show()
 
-#PCA QSTN 
+#CLUSTERING ASSESSMENT QSTN 
+import pandas as pd
+from sklearn.cluster import AgglomerativeClustering, DBSCAN
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
 
+# LOAD DATA
+df = pd.read_csv('D6_train.csv') # [cite: 54, 83]
+X_scaled = StandardScaler().fit_transform(df)
+
+# APPLY CLUSTERING
+# 
+hc = AgglomerativeClustering(n_clusters=3)
+hc_labels = hc.fit_predict(X_scaled)
+
+dbscan = DBSCAN(eps=0.5, min_samples=5)
+db_labels = dbscan.fit_predict(X_scaled)
+
+# EVALUATE PERFORMANCE
+# [cite: 62, 91]
+hc_score = silhouette_score(X_scaled, hc_labels)
+print(f"Hierarchical Silhouette Score: {hc_score:.4f}")
+# INFERENCE: 
+# Score > 0.5: Well-defined, separate clusters.
+# Score < 0.2: Significant overlapping or poor cluster structure.
+
+# IDENTIFY BEST MODEL
+# [cite: 59, 88]
+best_labels = hc_labels if hc_score > 0 else db_labels
+
+#PCA ASSESSMENT QSTN
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.naive_bayes import GaussianNB # For Q2 [cite: 41]
+from sklearn.svm import SVC                 # For Q6 [cite: 109]
+from sklearn.metrics import accuracy_score
+
+# LOAD AND SCALE (PCA requires scaled data)
+df = pd.read_csv('D5_train.csv') 
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 1. APPLY PCA
+# [cite: 40, 107]
+pca = PCA(n_components=0.95) # Retain 95% of variance
+X_pca = pca.fit_transform(X_scaled)
+print(f"Features reduced from {X.shape[1]} to {X_pca.shape[1]}")
+# INFERENCE: PCA simplifies the model by merging highly correlated features.
+
+# 2. COMPARE PERFORMANCE
+# Q2 uses Naive Bayes[cite: 41, 42]; Q6 uses SVM [cite: 109, 110]
+model = GaussianNB() # Swap with SVC(kernel='rbf') for Q6
+model.fit(X_pca, y)
+acc = accuracy_score(y, model.predict(X_pca))
+print(f"Accuracy with PCA features: {acc:.2%}")
+# INFERENCE: If accuracy drops significantly, the dropped components held vital info.
+
+# 9. FINAL PREDICTION ON TEST SET
+# [cite: 47, 115]
+test_data = pd.read_csv('D5_test_noTarget.csv')
+test_scaled = scaler.transform(test_data)
+test_pca = pca.transform(test_scaled)
+final_preds = model.predict(test_pca)
+
+#ENSEMBLE ASSESSMENT QSTN
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, VotingClassifier
+from sklearn.metrics import confusion_matrix, classification_report, f1_score, roc_auc_score
+
+# 1. LOAD DATASET (Change filename based on your question: D5_train or D4_train)
+# [cite: 15, 66]
+df = pd.read_csv('D5_train.csv') 
+
+# 2. EXPLORATORY DATA ANALYTICS & VISUALIZATION
+# [cite: 16, 17, 67, 68]
+print("--- Dataset Description ---")
+print(df.describe()) # INFERENCE: Check for scaling needs or outliers
+
+# 3. PRE-PROCESSING
+# [cite: 18, 69]
+df.fillna(df.mean(), inplace=True) # INFERENCE: Handling missing values to prevent model errors
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+
+# 4. CORRELATION ANALYSIS
+# [cite: 19, 70]
+plt.figure(figsize=(10, 8))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title("Correlation Matrix")
+plt.show() 
+# INFERENCE: Values close to 1.0 or -1.0 indicate highly redundant features.
+
+# 5. ENSEMBLE ALGORITHM (Majority Voting)
+# 
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model1 = RandomForestClassifier(n_estimators=100)
+model2 = AdaBoostClassifier(n_estimators=100)
+ensemble = VotingClassifier(estimators=[('rf', model1), ('ada', model2)], voting='hard')
+ensemble.fit(X_train, y_train)
+
+# 7. TABULATE RESULTS & CONFUSION MATRIX
+# [cite: 22, 73]
+y_pred = ensemble.predict(X_val)
+cm = confusion_matrix(y_val, y_pred)
+print("--- Confusion Matrix ---")
+print(cm) 
+# INFERENCE: The diagonal shows correct predictions; off-diagonal shows errors.
+
+print("\n--- Classification Report ---")
+print(classification_report(y_val, y_pred))
+# INFERENCE: F1-Score represents the balance between Precision and Recall.
+
+# 9. PREDICT ON UNLABELLED TEST SET
+# [cite: 25, 76]
+test_df = pd.read_csv('D5_test_noTarget.csv') 
+test_predictions = ensemble.predict(test_df)
+output = pd.DataFrame({'Serial Number': range(1, len(test_predictions)+1), 
+                       'Predicted Label': test_predictions})
+output.to_csv('predictions.csv', index=False)
 
     
 """
